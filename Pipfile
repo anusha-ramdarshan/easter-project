@@ -5,7 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 pylint = "*"
-black = "*"
+black = "==18.9b0"
 
 [packages]
 plotly = "*"

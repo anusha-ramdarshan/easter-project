@@ -1,8 +1,9 @@
 # easter-project
 
-This is a work in progress, using the double diamond design process.
+This is a work in progress, using parts of the [double diamond design process](https://en.wikipedia.org/wiki/Double_Diamond_(design_process_model)).
 
-Problem statements:
+
+Insight statements:
 
     Anusha wants to DJ at parties
     Because then she won't need as many Djs
@@ -22,3 +23,12 @@ Selected Statement:
     Anusha wants to DJ at parties
     Because then she won't need as many Djs
     But does not have an organised music collection or does not have an in-depth knowledge of her collection
+
+How might we:
+ - help Anusha to understand the songs in her collection?
+ - help Anusha leverage the data in her music collection?
+ - help Anusha to play songs without understanding her whole music collection?
+ - help Anusha to avoid playing crap songs?
+ - help Anusha to understand which songs to play next?
+ - help Anusha to organise her music collection?
+ - help Anusha to get to know her music collection?

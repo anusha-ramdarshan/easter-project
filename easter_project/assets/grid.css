@@ -1,8 +1,12 @@
 .playlist_container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(640px, 1fr));
 
 }
 
-
-.item {}
+.song_container {
+    border:2px solid #800080;
+    border-radius: 25px;
+    padding: 20px;
+    margin: 20px;
+}

@@ -8,6 +8,7 @@ import spotipy
 from dash.dependencies import MATCH, Input, Output, State
 from flask_caching import Cache
 from spotipy.oauth2 import SpotifyOAuth
+import plotly.graph_objects as go
 
 scope = "user-read-playback-state,user-modify-playback-state"
 token = spotipy.util.prompt_for_user_token(
@@ -78,15 +79,29 @@ def update_output_div(playlist_id):
         oauth_manager=None,
         show_dialog=False,
     )
-    sp.current_playback()
-    print(json.dumps(sp.current_playback(), indent=4))
-    print(json.dumps(sp.devices(), indent=4))
+    # sp.current_playback()
+    # print(json.dumps(sp.current_playback(), indent=4))
+    # print(json.dumps(sp.devices(), indent=4))
     return rendered
 
 
 @cache.memoize()
 def get_audio_analysis(uri):
     return sp.audio_analysis(uri)
+
+
+def plot_song_data(analysis):
+
+    x = np.array([section["start"] for section in analysis["sections"]])  # time
+    y = np.array([section["loudness"] for section in analysis["sections"]])  # loudness
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=x, y=y, name="Loudness", line_shape="hv"))
+
+    fig.update_traces(hoverinfo="text+name", mode="lines+markers")
+    fig.update_layout(legend=dict(y=0.5, traceorder="reversed", font_size=16))
+
+    return dcc.Graph(figure=fig)
 
 
 def render_song(song):
@@ -96,8 +111,9 @@ def render_song(song):
     for beat in analysis["beats"]:
         beat_durations.append(beat["duration"])
     mean_beat_duration = np.mean(beat_durations)
-
     bpm = int(60 / mean_beat_duration)
+
+    graph = plot_song_data(analysis)
     return html.Div(
         children=[
             html.Button(
@@ -106,7 +122,9 @@ def render_song(song):
             html.Div(id={"type": "play_song_output", "index": uri}),
             html.Div(children=f"{song['track']['name']}"),
             html.Div(children=f"bpm = {bpm}"),
-        ]
+            graph,
+        ],
+        className="song_container",
     )
 
 

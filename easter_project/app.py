@@ -122,11 +122,19 @@ def render_song(song):
     graph = plot_song_data(analysis)
     return html.Div(
         children=[
-            html.Button(
-                "Play", id={"type": "play_song_button", "index": uri}, n_clicks=0,
+            html.Div(
+                children=[
+                    html.Div(children=f"{song['track']['artists'][0]['name']}"),
+                    html.Div(children=f"{song['track']['name']}"),
+                    html.Button(
+                        "Play",
+                        id={"type": "play_song_button", "index": uri},
+                        n_clicks=0,
+                    ),
+                ],
+                className="song_header",
             ),
             html.Div(id={"type": "play_song_output", "index": uri}),
-            html.Div(children=f"{song['track']['name']}"),
             html.Div(children=f"bpm = {bpm}"),
             graph,
         ],

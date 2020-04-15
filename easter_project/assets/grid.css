@@ -10,3 +10,9 @@
     padding: 20px;
     margin: 20px;
 }
+
+.song_header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}

@@ -92,8 +92,14 @@ def get_audio_analysis(uri):
 
 def plot_song_data(analysis):
 
-    x = np.array([section["start"] for section in analysis["sections"]])  # time
-    y = np.array([section["loudness"] for section in analysis["sections"]])  # loudness
+    last = analysis["sections"][-1]
+    x = np.array(
+        [section["start"] for section in analysis["sections"]]
+        + [last["start"] + last["duration"]]
+    )  # time
+    y = np.array(
+        [section["loudness"] for section in analysis["sections"]] + [last["loudness"]]
+    )  # loudness
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x, y=y, name="Loudness", line_shape="hv"))

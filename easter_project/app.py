@@ -1,13 +1,13 @@
 import json
-
+import numpy as np
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output, State, MATCH
 import requests
 import spotipy
+from dash.dependencies import MATCH, Input, Output, State
+from flask_caching import Cache
 from spotipy.oauth2 import SpotifyOAuth
-
 
 scope = "user-read-playback-state,user-modify-playback-state"
 token = spotipy.util.prompt_for_user_token(
@@ -26,6 +26,7 @@ print("logged into spotify")
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+cache = Cache(app.server, config={"CACHE_TYPE": "filesystem", "CACHE_DIR": ".cache"})
 
 app.layout = html.Div(
     [
@@ -50,10 +51,10 @@ def play_pause(n_clicks):
         pass
     elif n_clicks % 2 == 0:
         # TODO: ask whether the player is playing, and make it do the opposite
-        sp.start_playback()
+        sp.start_playback(device_id="ebd0aeab1bdf270978926d619a400d8a4af9976b")
         return "Pause"
     else:
-        sp.pause_playback()
+        sp.pause_playback(device_id="ebd0aeab1bdf270978926d619a400d8a4af9976b")
         return "Play"
 
     return "Play/Pause"
@@ -83,16 +84,28 @@ def update_output_div(playlist_id):
     return rendered
 
 
+@cache.memoize()
+def get_audio_analysis(uri):
+    return sp.audio_analysis(uri)
+
+
 def render_song(song):
+    uri = song["track"]["uri"]
+    analysis = get_audio_analysis(uri)
+    beat_durations = []
+    for beat in analysis["beats"]:
+        beat_durations.append(beat["duration"])
+    mean_beat_duration = np.mean(beat_durations)
+
+    bpm = int(60 / mean_beat_duration)
     return html.Div(
         children=[
             html.Button(
-                "Play",
-                id={"type": "play_song_button", "index": song["track"]["uri"]},
-                n_clicks=0,
+                "Play", id={"type": "play_song_button", "index": uri}, n_clicks=0,
             ),
-            html.Div(id={"type": "play_song_output", "index": song["track"]["uri"]}),
+            html.Div(id={"type": "play_song_output", "index": uri}),
             html.Div(children=f"{song['track']['name']}"),
+            html.Div(children=f"bpm = {bpm}"),
         ]
     )
 
@@ -137,4 +150,3 @@ def embed_link(song):
 
 if __name__ == "__main__":
     app.run_server(debug=True)
-

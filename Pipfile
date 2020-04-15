@@ -13,6 +13,8 @@ dash = "*"
 requests = "*"
 python-dotenv = "*"
 spotipy = "*"
+Flask-Caching = "*"
+numpy = "*"
 
 [requires]
 python_version = "3.8"

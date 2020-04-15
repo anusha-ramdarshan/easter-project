@@ -131,3 +131,4 @@ dmypy.json
 # SECRETS
 .env
 .vscode/
+.cache-*

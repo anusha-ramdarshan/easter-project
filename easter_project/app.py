@@ -37,6 +37,7 @@ app.layout = html.Div(
             type="text",
         ),
         html.Button("Play/Pause", id="playing", n_clicks=0),
+        html.Div(id="summary_plot"),
         html.Div(id="rendered_playlist", className="playlist_container",),
         html.Div(id="ignored", style={"display": "none"}),
     ]
@@ -62,6 +63,44 @@ def play_pause(n_clicks):
 
 
 @app.callback(
+    Output(component_id="summary_plot", component_property="children"),
+    [Input(component_id="spotify_playlist_uri", component_property="value")],
+)
+def update_summary_output_div(playlist_id):
+    results = get_audio_features_for_playlist(playlist_id)
+    print(json.dumps(results))
+    rendered = "hello"
+    rendered = plot_playlist_data(playlist_id)
+    return rendered
+
+
+@cache.memoize()
+def get_audio_features_for_playlist(playlist_id):
+    results = sp.playlist_tracks(playlist_id)
+    songs = results["items"]
+    tracks = [song["track"]["id"] for song in songs]
+
+    return sp.audio_features(tracks=tracks)
+
+
+def plot_playlist_data(playlist_id):
+    features = get_audio_features_for_playlist(playlist_id)
+
+    x = list(range(1, len(features)))
+    y0 = [feature["energy"] for feature in features]
+    y1 = [feature["danceability"] for feature in features]
+    y2 = [feature["valence"] for feature in features]
+
+    # Create traces
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=x, y=y0, mode="lines+markers", name="energy"))
+    fig.add_trace(go.Scatter(x=x, y=y1, mode="lines+markers", name="danceability"))
+    fig.add_trace(go.Scatter(x=x, y=y2, mode="lines+markers", name="valence"))
+
+    return dcc.Graph(figure=fig)
+
+
+@app.callback(
     Output(component_id="rendered_playlist", component_property="children"),
     [Input(component_id="spotify_playlist_uri", component_property="value")],
 )
@@ -69,19 +108,6 @@ def update_output_div(playlist_id):
     results = sp.playlist_tracks(playlist_id)
     songs = results["items"]
     rendered = [render_song(song) for song in songs]
-    spotipy.util.prompt_for_user_token(
-        "eosimias",
-        scope=None,
-        client_id=None,
-        client_secret=None,
-        redirect_uri=None,
-        cache_path=None,
-        oauth_manager=None,
-        show_dialog=False,
-    )
-    # sp.current_playback()
-    # print(json.dumps(sp.current_playback(), indent=4))
-    # print(json.dumps(sp.devices(), indent=4))
     return rendered
 
 
@@ -90,8 +116,8 @@ def get_audio_analysis(uri):
     return sp.audio_analysis(uri)
 
 
-def plot_song_data(analysis):
-
+def plot_song_data(uri):
+    analysis = get_audio_analysis(uri)
     last = analysis["sections"][-1]
     x = np.array(
         [section["start"] for section in analysis["sections"]]
@@ -110,16 +136,21 @@ def plot_song_data(analysis):
     return dcc.Graph(figure=fig)
 
 
-def render_song(song):
-    uri = song["track"]["uri"]
+@cache.memoize()
+def get_bpm(uri):
     analysis = get_audio_analysis(uri)
     beat_durations = []
     for beat in analysis["beats"]:
         beat_durations.append(beat["duration"])
     mean_beat_duration = np.mean(beat_durations)
-    bpm = int(60 / mean_beat_duration)
+    return int(60 / mean_beat_duration)
 
-    graph = plot_song_data(analysis)
+
+def render_song(song):
+    uri = song["track"]["uri"]
+    bpm = get_bpm(uri)
+
+    # graph = plot_song_data(uri)
     return html.Div(
         children=[
             html.Div(
@@ -136,7 +167,7 @@ def render_song(song):
             ),
             html.Div(id={"type": "play_song_output", "index": uri}),
             html.Div(children=f"bpm = {bpm}"),
-            graph,
+            # graph,
         ],
         className="song_container",
     )

@@ -9,6 +9,7 @@ from dash.dependencies import MATCH, Input, Output, State
 from flask_caching import Cache
 from spotipy.oauth2 import SpotifyOAuth
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 scope = "user-read-playback-state,user-modify-playback-state"
 token = spotipy.util.prompt_for_user_token(
@@ -90,12 +91,37 @@ def plot_playlist_data(playlist_id):
     y0 = [feature["energy"] for feature in features]
     y1 = [feature["danceability"] for feature in features]
     y2 = [feature["valence"] for feature in features]
+    y3 = [feature["tempo"] for feature in features]
 
     # Create traces
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x, y=y0, mode="lines+markers", name="energy"))
-    fig.add_trace(go.Scatter(x=x, y=y1, mode="lines+markers", name="danceability"))
-    fig.add_trace(go.Scatter(x=x, y=y2, mode="lines+markers", name="valence"))
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    fig.add_trace(
+        go.Scatter(x=x, y=y0, mode="lines+markers", name="energy"), secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(x=x, y=y1, mode="lines+markers", name="danceability"),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(x=x, y=y2, mode="lines+markers", name="valence"), secondary_y=False,
+    )
+
+    fig.add_trace(
+        go.Scatter(x=x, y=y3, name="tempo/bpm"), secondary_y=True,
+    )
+
+    # Add figure title
+    fig.update_layout(title_text=f"Spotify Playlist:{playlist_id}")
+
+    # Set y-axes titles
+    fig.update_yaxes(title_text="energy/danceability/valence", secondary_y=False)
+    fig.update_yaxes(title_text="Tempo in beats per minute", secondary_y=True)
+
+    fig.update_layout(xaxis=dict(tickmode="linear", tick0=1, dtick=1))
+    # TODO : fig.update_layout(xaxis = dict(tickmode = 'array', tickvals = x, ticktext = ))
+
+    # fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    fig.update_layout(template="simple_white")
 
     return dcc.Graph(figure=fig)
 

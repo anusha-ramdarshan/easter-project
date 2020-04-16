@@ -49,7 +49,7 @@ def get_layout():
                     html.Div(
                         [
                             dcc.Markdown(
-                                """**Click Data** Click on points in the graph."""
+                                """For more information on a song, click on a point in the graph"""
                             ),
                             html.Pre(id="click-data"),
                         ]
@@ -89,7 +89,7 @@ def play_pause(n_clicks):
 )
 def update_summary_output_div(playlist_id):
     results = get_audio_features_for_playlist(playlist_id)
-    print(json.dumps(results))
+    print(json.dumps(results, indent=4))
     rendered = render_summary(playlist_id)
     return rendered
 
@@ -99,12 +99,12 @@ def get_audio_features_for_playlist(playlist_id):
     results = sp.playlist_tracks(playlist_id)
     songs = results["items"]
     tracks = [song["track"]["id"] for song in songs]
-
-    return sp.audio_features(tracks=tracks)
+    names = [song["track"]["name"] for song in songs]
+    return sp.audio_features(tracks=tracks), names
 
 
 def plot_playlist_data(playlist_id):
-    features = get_audio_features_for_playlist(playlist_id)
+    features, names = get_audio_features_for_playlist(playlist_id)
 
     x = list(range(1, len(features)))
     y0 = [feature["energy"] for feature in features]
@@ -136,10 +136,10 @@ def plot_playlist_data(playlist_id):
     fig.update_yaxes(title_text="energy/danceability/valence", secondary_y=False)
     fig.update_yaxes(title_text="Tempo in beats per minute", secondary_y=True)
 
-    fig.update_layout(xaxis=dict(tickmode="linear", tick0=1, dtick=1))
-    # TODO : fig.update_layout(xaxis = dict(tickmode = 'array', tickvals = x, ticktext = ))
+    fig.update_xaxes(tickangle=45, tickfont=dict(size=10))
 
-    # fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    fig.update_layout(xaxis=dict(tickmode="linear", tick0=1, dtick=1))
+    fig.update_layout(xaxis=dict(tickmode="array", tickvals=x, ticktext=names))
     fig.update_layout(template="simple_white", clickmode="event+select")
 
     return dcc.Graph(id="playlist_summary_plot", figure=fig)
@@ -152,10 +152,42 @@ def render_summary(playlist_id):
 
 
 @app.callback(
-    Output("click-data", "children"), [Input("playlist_summary_plot", "clickData")]
+    Output("click-data", "children"),
+    [
+        Input(component_id="spotify_playlist_uri", component_property="value"),
+        Input("playlist_summary_plot", "clickData"),
+    ],
 )
-def display_click_data(clickData):
-    return json.dumps(clickData, indent=2)
+def display_click_data(playlist, clickData):
+
+    return plot_detailed_song(playlist, clickData)
+
+
+def plot_detailed_song(playlist, clickData):
+    if clickData is None:
+        return "waiting for click"
+
+    tracks = sp.playlist_tracks(playlist)["items"]
+    song_number = clickData["points"][0]["x"]
+    song = tracks[song_number]
+
+    analysis = get_audio_analysis(song["track"]["uri"])
+    last = analysis["sections"][-1]
+    x = np.array(
+        [section["start"] for section in analysis["sections"]]
+        + [last["start"] + last["duration"]]
+    )  # time
+    y = np.array(
+        [section["loudness"] for section in analysis["sections"]] + [last["loudness"]]
+    )  # loudness
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=x, y=y, name="Loudness", line_shape="hv"))
+
+    fig.update_traces(hoverinfo="text+name", mode="lines+markers")
+    fig.update_layout(legend=dict(y=0.5, traceorder="reversed", font_size=16))
+
+    return dcc.Graph(figure=fig)
 
 
 @app.callback(

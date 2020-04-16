@@ -30,19 +30,39 @@ external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 cache = Cache(app.server, config={"CACHE_TYPE": "filesystem", "CACHE_DIR": ".cache"})
 
-app.layout = html.Div(
-    [
-        dcc.Input(
-            id="spotify_playlist_uri",
-            value="spotify:playlist:5isCW7qPn5ZYmuTAzEg6Vt",
-            type="text",
-        ),
-        html.Button("Play/Pause", id="playing", n_clicks=0),
-        html.Div(id="summary_plot"),
-        html.Div(id="rendered_playlist", className="playlist_container",),
-        html.Div(id="ignored", style={"display": "none"}),
-    ]
-)
+
+def get_layout():
+    return html.Div(
+        [
+            dcc.Input(
+                id="spotify_playlist_uri",
+                value="spotify:playlist:5isCW7qPn5ZYmuTAzEg6Vt",
+                type="text",
+            ),
+            html.Button("Play/Pause", id="playing", n_clicks=0),
+            html.Div(
+                id="summary_plot",
+                children=[render_summary("spotify:playlist:5isCW7qPn5ZYmuTAzEg6Vt")],
+            ),
+            html.Div(
+                children=[
+                    html.Div(
+                        [
+                            dcc.Markdown(
+                                """**Click Data** Click on points in the graph."""
+                            ),
+                            html.Pre(id="click-data"),
+                        ]
+                    )
+                ],
+            ),
+            html.Div(id="rendered_playlist", className="playlist_container",),
+            html.Div(id="ignored", style={"display": "none"}),
+        ]
+    )
+
+
+app.layout = get_layout
 
 
 @app.callback(
@@ -70,8 +90,7 @@ def play_pause(n_clicks):
 def update_summary_output_div(playlist_id):
     results = get_audio_features_for_playlist(playlist_id)
     print(json.dumps(results))
-    rendered = "hello"
-    rendered = plot_playlist_data(playlist_id)
+    rendered = render_summary(playlist_id)
     return rendered
 
 
@@ -121,9 +140,22 @@ def plot_playlist_data(playlist_id):
     # TODO : fig.update_layout(xaxis = dict(tickmode = 'array', tickvals = x, ticktext = ))
 
     # fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
-    fig.update_layout(template="simple_white")
+    fig.update_layout(template="simple_white", clickmode="event+select")
 
-    return dcc.Graph(figure=fig)
+    return dcc.Graph(id="playlist_summary_plot", figure=fig)
+
+
+def render_summary(playlist_id):
+
+    graph = plot_playlist_data(playlist_id)
+    return html.Div(children=[graph,], className="song_container",)
+
+
+@app.callback(
+    Output("click-data", "children"), [Input("playlist_summary_plot", "clickData")]
+)
+def display_click_data(clickData):
+    return json.dumps(clickData, indent=2)
 
 
 @app.callback(

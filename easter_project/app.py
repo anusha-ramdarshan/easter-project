@@ -106,6 +106,9 @@ def get_audio_features_for_playlist(playlist_id):
 def plot_playlist_data(playlist_id):
     features, names = get_audio_features_for_playlist(playlist_id)
 
+    playlist_info = sp.playlist(playlist_id)
+    print(json.dumps(playlist_info, indent=4), "<--look at dis one")
+
     x = list(range(1, len(features)))
     y0 = [feature["energy"] for feature in features]
     y1 = [feature["danceability"] for feature in features]
@@ -130,7 +133,10 @@ def plot_playlist_data(playlist_id):
     )
 
     # Add figure title
-    fig.update_layout(title_text=f"Spotify Playlist:{playlist_id}")
+
+    fig.update_layout(
+        title_text=f"{playlist_info['name']} by {playlist_info['owner']['display_name']}"
+    )
 
     # Set y-axes titles
     fig.update_yaxes(title_text="energy/danceability/valence", secondary_y=False)

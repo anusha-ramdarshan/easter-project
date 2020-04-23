@@ -17,6 +17,9 @@ Flask-Caching = "*"
 numpy = "*"
 jupyterlab = "*"
 jupyter-lsp = "*"
+python-language-server = {extras = ["all"],version = "*"}
+wordcloud = "*"
+matplotlib = "*"
 
 [requires]
 python_version = "3.8"

@@ -11,6 +11,11 @@ For details of the design process, refer to [design_process.md](design_process.m
 
     pipenv install
 
+If you want to use the jupyter notebooks then you will also need to run this (may take 5-10 minutes, because it re-compiles all of the jupyter lab frontend assets).
+
+    pipenv run jupyter labextension install jupyterlab-plotly @krassowski/jupyterlab-lsp
+
+
 ## Make a .env config file from the template
 
     cp .env.example .env
@@ -33,3 +38,7 @@ For details of the design process, refer to [design_process.md](design_process.m
 It should pop up an authorisation page.
 
 Once you have authorized your app, it should print out a message in the terminal saying where the dashboard is hosted. Go there to view the dashboard.
+
+## Run the Jupyter Notebooks
+
+    pipenv run jupyter labextension install jupyterlab-plotly

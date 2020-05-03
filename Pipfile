@@ -20,6 +20,10 @@ jupyter-lsp = "*"
 python-language-server = {extras = ["all"],version = "*"}
 wordcloud = "*"
 matplotlib = "*"
+pandas = "*"
+pillow = "*"
+pyarrow = "*"
+tqdm = "*"
 
 [requires]
 python_version = "3.8"

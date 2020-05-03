@@ -11,25 +11,40 @@ from spotipy.oauth2 import SpotifyOAuth
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-scope = "user-read-playback-state,user-modify-playback-state"
-token = spotipy.util.prompt_for_user_token(
-    "eosimias",
-    scope=scope,
-    client_id=None,
-    client_secret=None,
-    redirect_uri=None,
-    cache_path=None,
-    oauth_manager=None,
-    show_dialog=False,
-)
-sp = spotipy.Spotify(auth=token)
-print("logged into spotify")
-
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 cache = Cache(app.server, config={"CACHE_TYPE": "filesystem", "CACHE_DIR": ".cache"})
 
+
+
+# https://developer.spotify.com/documentation/general/guides/scopes/
+SCOPE = ','.join(filter(None, [
+    "user-read-playback-state",
+    "user-modify-playback-state",
+    "user-library-read",
+    "user-read-currently-playing",
+    "user-follow-read",
+    "playlist-read-private",
+    "user-read-recently-played",
+    "playlist-modify-private",
+]))
+
+
+@cache.memoize(timeout=60)
+def get_sp():
+    token = spotipy.util.prompt_for_user_token(
+        "alsuren",
+        scope=SCOPE,
+        client_id=None,
+        client_secret=None,
+        redirect_uri=None,
+        cache_path=None,
+        oauth_manager=None,
+        show_dialog=False,
+    )
+
+    return spotipy.Spotify(auth=token)
 
 def get_layout():
     return html.Div(
@@ -74,10 +89,10 @@ def play_pause(n_clicks):
         pass
     elif n_clicks % 2 == 0:
         # TODO: ask whether the player is playing, and make it do the opposite
-        sp.start_playback(device_id="ebd0aeab1bdf270978926d619a400d8a4af9976b")
+        get_sp().start_playback(device_id="ebd0aeab1bdf270978926d619a400d8a4af9976b")
         return "Pause"
     else:
-        sp.pause_playback(device_id="ebd0aeab1bdf270978926d619a400d8a4af9976b")
+        get_sp().pause_playback(device_id="ebd0aeab1bdf270978926d619a400d8a4af9976b")
         return "Play"
 
     return "Play/Pause"
@@ -96,17 +111,17 @@ def update_summary_output_div(playlist_id):
 
 @cache.memoize()
 def get_audio_features_for_playlist(playlist_id):
-    results = sp.playlist_tracks(playlist_id)
+    results = get_sp().playlist_tracks(playlist_id)
     songs = results["items"]
     tracks = [song["track"]["id"] for song in songs]
     names = [song["track"]["name"] for song in songs]
-    return sp.audio_features(tracks=tracks), names
+    return get_sp().audio_features(tracks=tracks), names
 
 
 def plot_playlist_data(playlist_id):
     features, names = get_audio_features_for_playlist(playlist_id)
 
-    playlist_info = sp.playlist(playlist_id)
+    playlist_info = get_sp().playlist(playlist_id)
     print(json.dumps(playlist_info, indent=4), "<--look at dis one")
 
     x = list(range(1, len(features)))
@@ -173,7 +188,7 @@ def plot_detailed_song(playlist, clickData):
     if clickData is None:
         return "waiting for click"
 
-    tracks = sp.playlist_tracks(playlist)["items"]
+    tracks = get_sp().playlist_tracks(playlist)["items"]
     song_number = clickData["points"][0]["x"]
     song = tracks[song_number]
 
@@ -201,7 +216,7 @@ def plot_detailed_song(playlist, clickData):
     [Input(component_id="spotify_playlist_uri", component_property="value")],
 )
 def update_output_div(playlist_id):
-    results = sp.playlist_tracks(playlist_id)
+    results = get_sp().playlist_tracks(playlist_id)
     songs = results["items"]
     rendered = [render_song(song) for song in songs]
     return rendered
@@ -209,7 +224,7 @@ def update_output_div(playlist_id):
 
 @cache.memoize()
 def get_audio_analysis(uri):
-    return sp.audio_analysis(uri)
+    return get_sp().audio_analysis(uri)
 
 
 def plot_song_data(uri):
@@ -291,7 +306,7 @@ def render_song(song):
 def handle_play_song_button(playlist, n_clicks, id):
     if n_clicks == 0:
         return ""
-    sp.start_playback(
+    get_sp().start_playback(
         device_id=None,
         context_uri=playlist,
         uris=None,

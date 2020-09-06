@@ -22,7 +22,7 @@ token = spotipy.util.prompt_for_user_token(
     oauth_manager=None,
     show_dialog=False,
 )
-sp = spotipy.Spotify(auth=token)
+sp = spotipy.Spotify(auth=token, requests_timeout=10)
 print("logged into spotify")
 
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
@@ -89,7 +89,7 @@ def play_pause(n_clicks):
 )
 def update_summary_output_div(playlist_id):
     results = get_audio_features_for_playlist(playlist_id)
-    print(json.dumps(results, indent=4))
+    # print(json.dumps(results, indent=4))
     rendered = render_summary(playlist_id)
     return rendered
 
@@ -107,7 +107,7 @@ def plot_playlist_data(playlist_id):
     features, names = get_audio_features_for_playlist(playlist_id)
 
     playlist_info = sp.playlist(playlist_id)
-    print(json.dumps(playlist_info, indent=4), "<--look at dis one")
+    # print(json.dumps(playlist_info, indent=4), "<--look at dis one")
 
     x = list(range(1, len(features)))
     y0 = [feature["energy"] for feature in features]

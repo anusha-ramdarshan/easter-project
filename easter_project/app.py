@@ -14,8 +14,8 @@ from plotly.subplots import make_subplots
 external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-cache = Cache(app.server, config={"CACHE_TYPE": "filesystem", "CACHE_DIR": ".cache"})
-
+cache = Cache(app.server, config={
+              "CACHE_TYPE": "filesystem", "CACHE_DIR": ".cache"})
 
 
 # https://developer.spotify.com/documentation/general/guides/scopes/
@@ -44,7 +44,8 @@ def get_sp():
         show_dialog=False,
     )
 
-    return spotipy.Spotify(auth=token)
+    return spotipy.Spotify(auth=token, requests_timeout=10)
+
 
 def get_layout():
     return html.Div(
@@ -57,7 +58,8 @@ def get_layout():
             html.Button("Play/Pause", id="playing", n_clicks=0),
             html.Div(
                 id="summary_plot",
-                children=[render_summary("spotify:playlist:5isCW7qPn5ZYmuTAzEg6Vt")],
+                children=[render_summary(
+                    "spotify:playlist:5isCW7qPn5ZYmuTAzEg6Vt")],
             ),
             html.Div(
                 children=[
@@ -122,7 +124,7 @@ def plot_playlist_data(playlist_id):
     features, names = get_audio_features_for_playlist(playlist_id)
 
     playlist_info = get_sp().playlist(playlist_id)
-    print(json.dumps(playlist_info, indent=4), "<--look at dis one")
+    # print(json.dumps(playlist_info, indent=4), "<--look at dis one")
 
     x = list(range(1, len(features)))
     y0 = [feature["energy"] for feature in features]
@@ -154,7 +156,8 @@ def plot_playlist_data(playlist_id):
     )
 
     # Set y-axes titles
-    fig.update_yaxes(title_text="energy/danceability/valence", secondary_y=False)
+    fig.update_yaxes(title_text="energy/danceability/valence",
+                     secondary_y=False)
     fig.update_yaxes(title_text="Tempo in beats per minute", secondary_y=True)
 
     fig.update_xaxes(tickangle=45, tickfont=dict(size=10))
@@ -169,7 +172,7 @@ def plot_playlist_data(playlist_id):
 def render_summary(playlist_id):
 
     graph = plot_playlist_data(playlist_id)
-    return html.Div(children=[graph,], className="song_container",)
+    return html.Div(children=[graph, ], className="song_container",)
 
 
 @app.callback(
@@ -199,7 +202,8 @@ def plot_detailed_song(playlist, clickData):
         + [last["start"] + last["duration"]]
     )  # time
     y = np.array(
-        [section["loudness"] for section in analysis["sections"]] + [last["loudness"]]
+        [section["loudness"]
+            for section in analysis["sections"]] + [last["loudness"]]
     )  # loudness
 
     fig = go.Figure()
@@ -235,7 +239,8 @@ def plot_song_data(uri):
         + [last["start"] + last["duration"]]
     )  # time
     y = np.array(
-        [section["loudness"] for section in analysis["sections"]] + [last["loudness"]]
+        [section["loudness"]
+            for section in analysis["sections"]] + [last["loudness"]]
     )  # loudness
 
     fig = go.Figure()
@@ -266,7 +271,8 @@ def render_song(song):
         children=[
             html.Div(
                 children=[
-                    html.Div(children=f"{song['track']['artists'][0]['name']}"),
+                    html.Div(
+                        children=f"{song['track']['artists'][0]['name']}"),
                     html.Div(children=f"{song['track']['name']}"),
                     html.Button(
                         "Play",
